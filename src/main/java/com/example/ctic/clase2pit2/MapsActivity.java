@@ -17,18 +17,21 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     String urlAlumno;
-    String codigoAlumno;
+    ArrayList<String> codigos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        codigoAlumno = getIntent().getStringExtra("codigo");
-        urlAlumno = "http://www.orce.uni.edu.pe/detaalu.php?id="+codigoAlumno+"&op=detalu";
+        //codigoAlumno = getIntent().getStringExtra("codigo");
+
+        codigos = Utils.getCodigosUNI();
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -46,10 +49,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        final LatLng ciencias = new LatLng(-12.0185025, -77.0500628);
-        final LatLng comedor = new LatLng(-12.0185581,-77.0497471);
+        for(String codigo : codigos){
+            agregarAlumnoAlMapa(codigo);
+        }
 
+    }
+
+    public void agregarAlumnoAlMapa(String codigouni){
+        urlAlumno = "http://www.orce.uni.edu.pe/detaalu.php?id="+codigouni+"&op=detalu";
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         StringRequest request = new StringRequest(Request.Method.GET, urlAlumno,
@@ -59,16 +66,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         String codigo = obtenerValorEtiqueta(response, "Codigo UNI:</td><td>", "</td>");
                         String nombre = obtenerValorEtiqueta(response, "Nombres:</td><td>", "</td>");
                         String especialidad = obtenerValorEtiqueta(response, "Especialidad:</td><td>", "</td>");
-                        String faculdad = obtenerValorEtiqueta(response, "Facultad:</td><td>", "</td>");
+                        String facultad = obtenerValorEtiqueta(response, "Facultad:</td><td>", "</td>");
 
-                        if(faculdad.equalsIgnoreCase("CIENCIAS")){
-                            mMap.addMarker(new MarkerOptions().position(ciencias).title(nombre));
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ciencias, 16));
-                        }
-                        else{
-                            mMap.addMarker(new MarkerOptions().position(comedor).title(nombre));
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(comedor, 16));
-                        }
+                        LatLng ubicacion = Utils.obtenerLatLngFacultad(facultad);
+                        mMap.addMarker(new MarkerOptions().position(ubicacion).title(nombre));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacion, 16));
+
                     }
                 }, new Response.ErrorListener() {
             @Override
